@@ -1,0 +1,13 @@
+{
+  "name": "date-warehouse-airline-project",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "start": "npm --prefix frontend run dev",
+    "install-frontend": "npm --prefix frontend install"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.8",
+    "react-bootstrap": "^2.10.10"
+  }
+}

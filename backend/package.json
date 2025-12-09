@@ -1,12 +1,15 @@
 {
   "name": "backend",
+  "type": "module",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^3.0.0"
+    "@supabase/supabase-js": "^2.29.0",
+    "kafkajs": "^2.2.4",
+    "express-fileupload": "^1.4.0",
+    "csv-parse": "^5.4.0"
   }
 }

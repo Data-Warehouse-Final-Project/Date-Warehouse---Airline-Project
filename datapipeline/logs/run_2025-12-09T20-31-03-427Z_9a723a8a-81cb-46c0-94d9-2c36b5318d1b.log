@@ -1,0 +1,6 @@
+Run 2025-12-09T20-31-03-427Z_9a723a8a-81cb-46c0-94d9-2c36b5318d1b started
+extractFile start for table=facttravelagency file=2025-12-09T20-31-03-365Z_travel_agency_sales_001.csv
+running cleaner: python C:\airlines\Date-Warehouse---Airline-Project\backend\etl_scripts\staging_script\cleaners\__init__.py C:\airlines\Date-Warehouse---Airline-Project\datapipeline\uploads\incoming\2025-12-09T20-31-03-365Z_travel_agency_sales_001.csv -> C:\airlines\Date-Warehouse---Airline-Project\datapipeline\uploads\cleaned\2025-12-09T20-31-03-365Z_travel_agency_sales_001.csv
+Python was not found; run without
+arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.
+exit code 9009

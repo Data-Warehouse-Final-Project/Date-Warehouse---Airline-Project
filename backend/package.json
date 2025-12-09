@@ -1,15 +1,16 @@
 {
   "name": "backend",
-  "type": "module",
   "private": true,
   "version": "0.0.0",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.29.0",
-    "kafkajs": "^2.2.4",
-    "express-fileupload": "^1.4.0",
-    "csv-parse": "^5.4.0"
+    "@supabase/supabase-js": "^2.87.1",
+    "cors": "^2.8.5",
+    "csv-parse": "^5.4.0",
+    "dotenv": "^17.2.3",
+    "express-fileupload": "^1.5.2",
+    "kafkajs": "^2.2.4"
   }
 }

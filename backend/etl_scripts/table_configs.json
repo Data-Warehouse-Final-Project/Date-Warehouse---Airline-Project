@@ -1,0 +1,13 @@
+{
+  "booking_sales": {
+    "staging_table": "staging_booking_sales",
+    "pre_fact_table": "prefact_booking_sales",
+    "dimension_table": "dim_booking_sales",
+    "fact_table": "fact_booking_sales",
+    "natural_key": "booking_reference",
+    "scdType": 2,
+    "staging_on_conflict": "booking_reference",
+    "pre_fact_on_conflict": "booking_reference",
+    "fact_on_conflict": "booking_reference"
+  }
+}

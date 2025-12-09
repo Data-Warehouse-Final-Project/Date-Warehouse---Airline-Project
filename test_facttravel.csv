@@ -1,0 +1,3 @@
+﻿transactionid,transactiondate,passengerid,flightid,ticketprice,taxes,baggagefees,totalamount
+40001,2024/Jan/05,P10001,AA123,100.00,10.00,5.00,115.00
+40002,2024/Feb/10,P10002,BA456,200.00,20.00,10.00,230.00

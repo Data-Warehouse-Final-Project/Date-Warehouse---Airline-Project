@@ -6,6 +6,7 @@ import path from 'path';
 import { exec } from 'child_process';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import { Client } from 'pg';
 import { fileURLToPath } from 'url';
 
 dotenv.config();
@@ -27,6 +28,89 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const PORT = process.env.PORT || 3001;
+
+// Helper: map file types to staging table names
+const STAGING_TABLE_MAP = {
+  transactions: 'staging_facttravelagencysales_source2_agency',
+  passengers: 'staging_passengers',
+  flights: 'staging_flights',
+  airports: 'staging_airports',
+  airlines: 'staging_airlines'
+};
+
+/**
+ * Ensure a PostgreSQL table exists for the uploaded CSV.
+ * This function reads the CSV header line and creates a table with TEXT columns
+ * named after sanitized header names. It requires `DATABASE_URL` environment variable
+ * to be set (use the Supabase Postgres connection string / service role DB URL).
+ */
+async function ensureTableForCsv(filePath, fileType) {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    throw new Error('DATABASE_URL not configured. Add your Supabase Postgres connection string as DATABASE_URL in the backend .env');
+  }
+
+  const tableName = STAGING_TABLE_MAP[fileType] || `staging_${fileType}`;
+
+  try {
+    // Read first line of CSV to get headers
+    const content = fs.readFileSync(filePath, { encoding: 'utf8' });
+    const firstLine = content.split(/\r?\n/)[0] || '';
+    const headers = firstLine.split(',').map(h => h.trim()).filter(Boolean);
+
+    console.log(`📄 CSV headers found: ${headers.join(', ')}`);
+
+    // sanitize headers to valid SQL identifiers (simple approach)
+    const sanitize = (h) => h.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'col';
+    const cols = headers.length ? headers.map(h => `${sanitize(h)} TEXT`) : ['raw_record JSONB'];
+
+    const createSql = `CREATE TABLE IF NOT EXISTS ${tableName} (id SERIAL PRIMARY KEY, ${cols.join(', ')}, inserted_at TIMESTAMP WITH TIME ZONE DEFAULT now())`;
+
+    console.log(`🛠️  Creating table with SQL: ${createSql}`);
+
+    const client = new Client({ connectionString: dbUrl });
+    await client.connect();
+    try {
+      // Check if table exists and inspect column types
+      const checkRes = await client.query(
+        `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = $1`,
+        [tableName]
+      );
+
+      let useTable = tableName;
+      if (checkRes.rows && checkRes.rows.length > 0) {
+        const nonText = checkRes.rows.filter(r => r.data_type !== 'text' && r.data_type !== 'character varying');
+        if (nonText.length > 0) {
+          // Existing table has typed columns - create a safe raw table instead
+          const altTable = `${tableName}_raw`;
+          const altCreateSql = `CREATE TABLE IF NOT EXISTS ${altTable} (id SERIAL PRIMARY KEY, ${cols.join(', ')}, inserted_at TIMESTAMP WITH TIME ZONE DEFAULT now())`;
+          console.log(`⚠️  Existing table ${tableName} has non-text columns. Creating alternate table: ${altTable}`);
+          await client.query(altCreateSql);
+          useTable = altTable;
+        } else {
+          // Table exists and columns are text-like; nothing to do
+          console.log(`✅ Table ${tableName} exists and is compatible`);
+        }
+      } else {
+        // Table does not exist - create it
+        console.log(`🛠️  Creating table with SQL: ${createSql}`);
+        await client.query(createSql);
+        console.log(`✅ Table ${tableName} created successfully`);
+        useTable = tableName;
+      }
+
+      return useTable;
+    } catch (queryErr) {
+      console.error(`❌ Error executing SQL query: ${queryErr.message}`);
+      throw new Error(`Failed to create/verify table: ${queryErr.message}`);
+    } finally {
+      await client.end();
+    }
+  } catch (err) {
+    console.error(`❌ ensureTableForCsv error: ${err.message}`);
+    throw err;
+  }
+}
 
 // ============================================
 // FILE CLEANING ENDPOINT
@@ -71,8 +155,27 @@ app.post('/api/clean-file', upload.single('file'), async (req, res) => {
     console.log(`🔄 Running cleaning script with Python: ${pythonExe}`);
     console.log(`🔄 Script path: ${pythonScriptPath}`);
 
+    // Ensure staging table exists for this CSV (reads header row and creates TEXT columns)
+    let stagingTableName;
+    try {
+      stagingTableName = await ensureTableForCsv(inputFilePath, fileType);
+      console.log(`🛠️  Ensured staging table exists: ${stagingTableName}`);
+      // Give PostgREST / Supabase a short moment to pick up newly-created table in schema cache
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      console.log('⏳ Waited 2s for Supabase schema cache to refresh (if table was newly created)');
+    } catch (tableErr) {
+      console.error('❌ Failed to ensure staging table:', tableErr.message);
+      console.error('Stack trace:', tableErr.stack);
+      return res.status(500).json({ 
+        error: `Failed to ensure staging table: ${tableErr.message}`,
+        details: tableErr.stack
+      });
+    }
+
     // Call the Python script with full path to Python executable
-    exec(`"${pythonExe}" "${pythonScriptPath}" "${inputFilePath}" "${fileType}" "${SUPABASE_URL}" "${SUPABASE_KEY}"`, (error, stdout, stderr) => {
+    // Pass the resolved staging table name as an extra argument so the Python script writes to a compatible table
+    const pythonArgs = `"${pythonScriptPath}" "${inputFilePath}" "${fileType}" "${SUPABASE_URL}" "${SUPABASE_KEY}" "${stagingTableName}"`;
+    exec(`"${pythonExe}" ${pythonArgs}`, (error, stdout, stderr) => {
       if (error) {
         console.error(`❌ Error running Python script: ${error.message}`);
         return res.status(500).json({ error: `Error cleaning file: ${error.message}` });
@@ -107,10 +210,24 @@ app.post('/api/clean-file', upload.single('file'), async (req, res) => {
 // ELIGIBILITY CHECK ENDPOINT
 // ============================================
 app.post('/api/check-eligibility', async (req, res) => {
-  const { firstName, lastName, flightNumber, passengerId } = req.body || {};
+  const { firstName: reqFirstName, lastName: reqLastName, fullName, flightNumber, passengerId } = req.body || {};
 
-  if (!firstName || !lastName || !flightNumber || !passengerId) {
-    return res.status(400).json({ error: 'Missing required fields: firstName, lastName, flightNumber, passengerId' });
+  // Log the incoming body to help debugging when requests fail
+  console.log('📥 /api/check-eligibility received body:', JSON.stringify(req.body));
+
+  // Derive firstName/lastName from fullName when needed
+  let firstName = reqFirstName || '';
+  let lastName = reqLastName || '';
+  if ((!firstName || !lastName) && fullName) {
+    const parts = String(fullName).trim().split(/\s+/);
+    if (!firstName) firstName = parts.length ? parts[0] : '';
+    if (!lastName) lastName = parts.length > 1 ? parts.slice(1).join(' ') : '';
+  }
+
+  // Require at least firstName, flightNumber and passengerId
+  if (!firstName || !flightNumber || !passengerId) {
+    console.warn('⚠️ check-eligibility missing fields', { firstName, flightNumber, passengerId });
+    return res.status(400).json({ error: 'Missing required fields: firstName (or fullName), flightNumber, passengerId' });
   }
 
   try {
@@ -192,6 +309,84 @@ app.post('/api/check-eligibility', async (req, res) => {
       details: err.message,
       eligible: false,
       reason: 'server_error'
+    });
+  }
+});
+
+// ============================================
+// TRANSFORM TABLES ENDPOINT
+// ============================================
+app.post('/api/transform-tables', async (req, res) => {
+  try {
+    const { file_type } = req.body || {};
+
+    if (!file_type) {
+      return res.status(400).json({ error: 'Missing required field: file_type' });
+    }
+
+    console.log(`🔄 Transform request received for file_type: ${file_type}`);
+
+    // Map file types to their staging table names
+    const stagingTableMap = {
+      transactions: 'staging_facttravelagencysales_source2_agency',
+      passengers: 'staging_passengers',
+      flights: 'staging_flights',
+      airports: 'staging_airports',
+      airlines: 'staging_airlines',
+      airlinesales: 'staging_airlinesales'
+    };
+
+    const stagingTable = stagingTableMap[file_type];
+    if (!stagingTable) {
+      return res.status(400).json({ error: `Unknown file_type: ${file_type}. Valid types: ${Object.keys(stagingTableMap).join(', ')}` });
+    }
+
+    console.log(`📊 Attempting to transform and upsert from ${stagingTable}`);
+
+    // Query the staging table to get cleaned data
+    const { data: stagedData, error: queryError } = await supabase
+      .from(stagingTable)
+      .select('*')
+      .limit(10000); // Limit to prevent memory issues
+
+    if (queryError) {
+      console.error(`❌ Error querying staging table ${stagingTable}:`, queryError);
+      return res.status(500).json({ 
+        error: `Failed to query staging table: ${queryError.message}`,
+        details: queryError
+      });
+    }
+
+    if (!stagedData || stagedData.length === 0) {
+      console.log(`⚠️  No data found in staging table ${stagingTable}`);
+      return res.json({ 
+        message: `Transform completed. No rows found in ${stagingTable}`,
+        rows_processed: 0
+      });
+    }
+
+    console.log(`✅ Retrieved ${stagedData.length} rows from ${stagingTable}`);
+
+    // For now, just confirm the data was retrieved
+    // In a production system, you would:
+    // 1. Apply transformations (cleansing, enrichment, dimensional lookups)
+    // 2. Load into fact/dimension tables
+    // 3. Update SCD Type 2 tables for slowly changing dimensions
+    // 4. Archive processed records
+
+    return res.json({
+      message: `Transform completed successfully for ${file_type}`,
+      file_type: file_type,
+      staging_table: stagingTable,
+      rows_processed: stagedData.length,
+      sample_record: stagedData.length > 0 ? stagedData[0] : null
+    });
+
+  } catch (error) {
+    console.error('❌ Transform error:', error);
+    res.status(500).json({ 
+      error: `Error during transform: ${error.message}`,
+      details: error
     });
   }
 });

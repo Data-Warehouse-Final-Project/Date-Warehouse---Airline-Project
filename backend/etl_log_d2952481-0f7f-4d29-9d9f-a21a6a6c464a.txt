@@ -1,0 +1,6 @@
+[2025-12-10 21:58:49] File upload: ..\test_facttravel.csv (Size: 212 bytes) - UPLOADED: File uploaded successfully.
+
+==================== EXTRACT ====================
+[2025-12-10 21:59:00] Process Step: EXTRACT - Status: STARTED
+
+==================== CLEANING ====================

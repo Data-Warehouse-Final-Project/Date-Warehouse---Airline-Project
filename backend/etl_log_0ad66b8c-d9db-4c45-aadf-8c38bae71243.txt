@@ -1,0 +1,8 @@
+[2025-12-10 22:58:29] File upload: C:\Users\Administrator\Documents\GitHub\Date-Warehouse---Airline-Project\test_facttravel.csv (Size: 212 bytes) - UPLOADED: File uploaded successfully.
+
+==================== EXTRACT ====================
+[2025-12-10 22:58:30] Process Step: EXTRACT - Status: STARTED
+
+==================== CLEANING ====================
+[2025-12-10 22:58:31] Process Step: CLEANING TRANSACTIONS - Status: SUCCESS
+[2025-12-10 22:58:31] Process Step: EXPORT QUARANTINED CSV FOR transactions - Status: INFO

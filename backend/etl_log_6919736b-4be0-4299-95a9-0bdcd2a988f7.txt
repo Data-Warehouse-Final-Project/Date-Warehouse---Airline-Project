@@ -1,0 +1,8 @@
+[2025-12-10 22:34:20] File upload: C:\Users\Administrator\Documents\GitHub\Date-Warehouse---Airline-Project\backend\uploads\3047da25625e926454a3ce448adc44dc (Size: 19757 bytes) - UPLOADED: File uploaded successfully.
+
+==================== EXTRACT ====================
+[2025-12-10 22:34:20] Process Step: EXTRACT - Status: STARTED
+
+==================== CLEANING ====================
+[2025-12-10 22:34:21] Process Step: CLEANING TRANSACTIONS - Status: SUCCESS
+[2025-12-10 22:34:22] Process Step: EXPORT QUARANTINED CSV FOR transactions - Status: INFO

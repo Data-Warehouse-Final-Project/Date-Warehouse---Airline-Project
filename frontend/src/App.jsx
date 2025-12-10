@@ -49,6 +49,18 @@ function App() {
     setCleanedTables(false);
   };
 
+  // Check backend health
+  const checkBackendHealth = async () => {
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+      const resp = await fetch(`${backendUrl}/health`, { timeout: 5000 });
+      return resp.ok;
+    } catch (err) {
+      console.error('Backend health check failed:', err);
+      return false;
+    }
+  };
+
   // Clean the file
   const handleClean = async () => {
     if (!file) {
@@ -67,6 +79,15 @@ function App() {
 
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+      
+      // Check backend health first
+      const isHealthy = await checkBackendHealth();
+      if (!isHealthy) {
+        setFileMessage(`Error: Backend server is not running at ${backendUrl}. Please start the backend server.`);
+        setFileMessageType('error');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('file_type', fileType);
@@ -88,7 +109,7 @@ function App() {
       setFileMessageType('success');
       setCleanedTables(true);
     } catch (err) {
-      setFileMessage(`Error contacting backend for cleaning: ${err.message}`);
+      setFileMessage(`Error contacting backend for cleaning: ${err.message}. Make sure the backend server is running on http://localhost:3001`);
       setFileMessageType('error');
     }
   };
@@ -149,6 +170,8 @@ function App() {
 
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+
+      // Send fullName; backend will derive firstName/lastName
       const resp = await fetch(`${backendUrl}/api/check-eligibility`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -2,6 +2,7 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
+  font-family: Georgia, serif;
 }
 
 .card-section {
@@ -19,14 +20,62 @@
 .section-title {
   margin-bottom: 1rem;
   text-align: center;
+  font-weight: bold;
 }
 
 .section-subtitle {
   margin-bottom: 1rem;
+  font-weight: bold;
 }
 
 .message-text {
-  color: green;
+  color: #1c2b61;
   font-weight: bold;
   text-align: center;
+  min-height: 1.5rem;
+  margin: 0;
+  font-size: 1.1rem;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.08);
+  width: 100%;
+}
+
+.file-message-container,
+.eligibility-message-container {
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.75rem;
+  width: 100%;
+}
+
+.message-text.error {
+  color: #1c2b61;
+}
+
+.message-text.success {
+  color: #1c2b61;
+}
+
+.custom-btn {
+  background-color: #1c2b61 !important;
+  color: white !important;
+  border-color: #1c2b61 !important;
+}
+
+.custom-btn:hover {
+  background-color: #15213a !important;
+  border-color: #15213a !important;
+  color: white !important;
+}
+
+.custom-btn:active,
+.custom-btn:focus {
+  background-color: #15213a !important;
+  border-color: #15213a !important;
+  color: white !important;
+  box-shadow: 0 0 0 0.25rem rgba(28, 43, 97, 0.5) !important;
 }

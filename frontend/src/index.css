@@ -1,5 +1,5 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: Georgia, serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light dark;
@@ -9,13 +9,33 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f0f2f5; /* light background for forms */
-  color: #000; /* default text color */
+  background-image: url('./assets/background.png');
+  background-repeat: repeat;
+  background-attachment: fixed;
+  color: #000;
   font-family: inherit;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(15, 0, 50, 0.5);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
 }
 
 html, body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden; /* prevent horizontal scroll if any */
+  overflow-x: hidden;
 }

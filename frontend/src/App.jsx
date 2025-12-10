@@ -13,8 +13,7 @@ function App() {
   const [fileMessage, setFileMessage] = useState('');
   const [fileMessageType, setFileMessageType] = useState('');
   const [eligibilityMessage, setEligibilityMessage] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [fullName, setFullName] = useState('');
   const [flightNumber, setFlightNumber] = useState('');
   const [passengerId, setPassengerId] = useState('');
   const [fileType, setFileType] = useState('');
@@ -141,7 +140,7 @@ function App() {
 
   // Check eligibility for insurance claim
   const handleCheckEligibility = async () => {
-    if (!firstName || !lastName || !flightNumber || !passengerId) {
+    if (!fullName || !flightNumber || !passengerId) {
       setEligibilityMessage('Please fill in all fields first.');
       return;
     }
@@ -153,7 +152,7 @@ function App() {
       const resp = await fetch(`${backendUrl}/api/check-eligibility`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstName, lastName, flightNumber, passengerId })
+        body: JSON.stringify({ fullName, flightNumber, passengerId })
       });
 
       if (!resp.ok) {
@@ -274,26 +273,14 @@ function App() {
             <Form className="flex-grow-1 d-flex flex-column justify-content-center w-100 search-form">
               <h5 className="section-subtitle">Please input record to search:</h5>
 
-              <Form.Group as={Row} className="mb-3 search-name-group" controlId="firstNameInput">
-                <Form.Label column sm="4">First Name:</Form.Label>
+              <Form.Group as={Row} className="mb-3 search-name-group" controlId="fullNameInput">
+                <Form.Label column sm="4">Full Name:</Form.Label>
                 <Col sm="8">
                   <Form.Control
                     type="text"
-                    placeholder="Enter first name"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                  />
-                </Col>
-              </Form.Group>
-
-              <Form.Group as={Row} className="mb-3 search-name-group" controlId="lastNameInput">
-                <Form.Label column sm="4">Last Name:</Form.Label>
-                <Col sm="8">
-                  <Form.Control
-                    type="text"
-                    placeholder="Enter last name"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Enter full name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                   />
                 </Col>
               </Form.Group>
@@ -324,7 +311,7 @@ function App() {
             </Form>
 
             <div className="mt-3 eligibility-button-section">
-              <Button type="button" className="w-100 mb-2 custom-btn eligibility-btn" onClick={handleCheckEligibility} disabled={!firstName || !lastName || !flightNumber || !passengerId}>
+              <Button type="button" className="w-100 mb-2 custom-btn eligibility-btn" onClick={handleCheckEligibility} disabled={!fullName || !flightNumber || !passengerId}>
                 Check Eligibility
               </Button>
             </div>

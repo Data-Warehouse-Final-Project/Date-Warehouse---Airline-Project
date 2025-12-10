@@ -6,199 +6,204 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
-//import { supabase } from './components/supabaseClient';
+import { supabase } from './components/supabaseClient';
 
 function App() {
   const [file, setFile] = useState(null);
-  const [fileMessage, setFileMessage] = useState("");
-  const [fileMessageType, setFileMessageType] = useState("");
-  const [eligibilityMessage, setEligibilityMessage] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [flightNumber, setFlightNumber] = useState("");
-  const [passengerId, setPassengerId] = useState("");
-  const [fileType, setFileType] = useState("");
+  const [fileMessage, setFileMessage] = useState('');
+  const [fileMessageType, setFileMessageType] = useState('');
+  const [eligibilityMessage, setEligibilityMessage] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [flightNumber, setFlightNumber] = useState('');
+  const [passengerId, setPassengerId] = useState('');
+  const [fileType, setFileType] = useState('');
   const [cleanedTables, setCleanedTables] = useState(false);
 
   const fileTypes = [
-    "airlines",
-    "airports",
-    "flights",
-    "passengers",
-    "transactions"
+    'airlines',
+    'airports',
+    'flights',
+    'passengers',
+    'transactions'
   ];
 
+  // Handle file upload
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
 
-    // =========================================
-    // ENSURE ONLY CSV FILES ARE UPLOADED
-    // =========================================
-    const validTypes = ["text/csv", "application/vnd.ms-excel"];
+    // Only accept CSV files
+    const validTypes = ['text/csv', 'application/vnd.ms-excel'];
     const fileName = selectedFile.name.toLowerCase();
-    if (!validTypes.includes(selectedFile.type) && !fileName.endsWith(".csv")) {
+    if (!validTypes.includes(selectedFile.type) && !fileName.endsWith('.csv')) {
       setFile(null);
-      setFileMessage("Only CSV files are allowed!");
-      setFileMessageType("error");
+      setFileMessage('Only CSV files are allowed!');
+      setFileMessageType('error');
       setCleanedTables(false);
       return;
     }
 
     setFile(selectedFile);
-    setFileMessage("");
-    setFileMessageType("");
+    setFileMessage('');
+    setFileMessageType('');
     setCleanedTables(false);
   };
 
-  // ============================================================
-  // CLEAN TABLES
-  // ============================================================
+  // Clean the file
   const handleClean = async () => {
     if (!file) {
-      setFileMessage("Please upload a file first.");
-      setFileMessageType("error");
+      setFileMessage('Please upload a file first.');
+      setFileMessageType('error');
       return;
     }
     if (!fileType) {
-      setFileMessage("Please select the CSV type before cleaning.");
-      setFileMessageType("error");
+      setFileMessage('Please select the CSV type before cleaning.');
+      setFileMessageType('error');
       return;
     }
 
-    setFileMessage("Cleaning in progress...");
-    setFileMessageType("info");
+    setFileMessage('Cleaning in progress...');
+    setFileMessageType('info');
 
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
       const formData = new FormData();
-      formData.append("file", file);
-      formData.append("file_type", fileType);
+      formData.append('file', file);
+      formData.append('file_type', fileType);
 
       const resp = await fetch(`${backendUrl}/api/clean-file`, {
-        method: "POST",
+        method: 'POST',
         body: formData
       });
 
-      const result = await resp.json();
-      if (resp.ok) {
-        setFileMessage(`${fileType.charAt(0).toUpperCase() + fileType.slice(1)} file cleaned successfully. Quarantined CSV saved.`);
-        setFileMessageType("success");
-        setCleanedTables(true);
-      } else {
-        setFileMessage(`Error during cleaning: ${result.error || "Unknown error"}`);
-        setFileMessageType("error");
+      if (!resp.ok) {
+        const errBody = await resp.text();
+        setFileMessage(`Error during cleaning: ${errBody || 'Unknown error'}`);
+        setFileMessageType('error');
+        return;
       }
+
+      const result = await resp.json();
+      setFileMessage(`${fileType.charAt(0).toUpperCase() + fileType.slice(1)} file cleaned successfully. Quarantined CSV saved.`);
+      setFileMessageType('success');
+      setCleanedTables(true);
     } catch (err) {
       setFileMessage(`Error contacting backend for cleaning: ${err.message}`);
-      setFileMessageType("error");
+      setFileMessageType('error');
     }
   };
 
-  // ============================================================
-  // TRANSFORM TABLES
-  // ============================================================
+  // Submit for transforming and upserting tables
   const handleSubmit = async () => {
     if (!file) {
-      setFileMessage("Please upload a file first.");
-      setFileMessageType("error");
+      setFileMessage('Please upload a file first.');
+      setFileMessageType('error');
       return;
     }
     if (!fileType) {
-      setFileMessage("Please select the CSV type before transforming.");
-      setFileMessageType("error");
+      setFileMessage('Please select the CSV type before transforming.');
+      setFileMessageType('error');
       return;
     }
     if (!cleanedTables) {
-      setFileMessage("Please clean the file before transforming.");
-      setFileMessageType("error");
+      setFileMessage('Please clean the file before transforming.');
+      setFileMessageType('error');
       return;
     }
 
-    setFileMessage("Transforming tables and upserting to database...");
-    setFileMessageType("info");
+    setFileMessage('Transforming tables and upserting to database...');
+    setFileMessageType('info');
 
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
       const resp = await fetch(`${backendUrl}/api/transform-tables`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ file_type: fileType })
       });
 
-      const result = await resp.json();
-      if (resp.ok) {
-        setFileMessage(`${fileType.charAt(0).toUpperCase() + fileType.slice(1)} tables transformed and upserted successfully.`);
-        setFileMessageType("success");
-      } else {
-        setFileMessage(`Error during transform: ${result.error || "Unknown error"}`);
-        setFileMessageType("error");
+      if (!resp.ok) {
+        const errBody = await resp.text();
+        setFileMessage(`Error during transform: ${errBody || 'Unknown error'}`);
+        setFileMessageType('error');
+        return;
       }
+
+      const result = await resp.json();
+      setFileMessage(`${fileType.charAt(0).toUpperCase() + fileType.slice(1)} tables transformed and upserted successfully.`);
+      setFileMessageType('success');
     } catch (err) {
       setFileMessage(`Error contacting backend for transform: ${err.message}`);
-      setFileMessageType("error");
+      setFileMessageType('error');
     }
   };
 
-  const handleCheckEligibility = () => {
-    // Perform an API call to backend which will produce a Kafka message
-    // and check Supabase for the flight times to determine eligibility.
-    const performCheck = async () => {
-      if (!firstName || !lastName || !flightNumber || !passengerId) {
-        setEligibilityMessage("Please fill in all fields first.");
+  // Check eligibility for insurance claim
+  const handleCheckEligibility = async () => {
+    if (!firstName || !lastName || !flightNumber || !passengerId) {
+      setEligibilityMessage('Please fill in all fields first.');
+      return;
+    }
+
+    setEligibilityMessage('Queued — waiting for eligibility result...');
+
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+      const resp = await fetch(`${backendUrl}/api/check-eligibility`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firstName, lastName, flightNumber, passengerId })
+      });
+
+      if (!resp.ok) {
+        const errBody = await resp.json();
+        const errMsg = errBody?.details || errBody?.error || 'Unknown error';
+        console.error('Backend error response:', errMsg);
+        setEligibilityMessage(`Backend error (${resp.status}): ${errMsg}`);
         return;
       }
-      setEligibilityMessage('Queued — waiting for eligibility result...');
-      try {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
-        const resp = await fetch(`${backendUrl}/api/check-eligibility`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ firstName, lastName, flightNumber, passengerId })
-        });
 
-        const requestTimeoutMs = 30000; // stop listening after 30s
-        let timedOut = false;
+      const requestTimeoutMs = 30000; // stop listening after 30s
+      let timedOut = false;
 
-        const channel = supabase
-          .channel(`eligibility-${passengerId}-${flightNumber}-${Date.now()}`)
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'eligibility_results',
-              filter: `passenger_id=eq.${passengerId}`
-            },
-            (payload) => {
-              if (timedOut) return;
-              const row = payload.new;
-              if (!row) return;
-              const { eligible, delay_minutes, reason } = row;
-              if (eligible) {
-                setEligibilityMessage(`Passenger is ELIGIBLE for insurance claim (delay ${delay_minutes} minutes)`);
-              } else {
-                if (reason === 'flight_not_found') setEligibilityMessage('No flight record found for this flight number.');
-                else if (reason === 'missing_time_data') setEligibilityMessage('Flight time data missing; cannot determine eligibility.');
-                else setEligibilityMessage(`Passenger is NOT eligible (delay ${delay_minutes ?? 'N/A'} minutes)`);
-              }
-
-              channel.unsubscribe();
+      const channel = supabase
+        .channel(`eligibility-${passengerId}-${flightNumber}-${Date.now()}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'eligibility_results',
+            filter: `passenger_id=eq.${passengerId}`
+          },
+          (payload) => {
+            if (timedOut) return;
+            const row = payload.new;
+            if (!row) return;
+            const { eligible, delay_minutes, reason } = row;
+            if (eligible) {
+              setEligibilityMessage(`Passenger is ELIGIBLE for insurance claim (delay ${delay_minutes} minutes)`);
+            } else {
+              if (reason === 'flight_not_found') setEligibilityMessage('No flight record found for this flight number.');
+              else if (reason === 'missing_time_data') setEligibilityMessage('Flight time data missing; cannot determine eligibility.');
+              else setEligibilityMessage(`Passenger is NOT eligible (delay ${delay_minutes ?? 'N/A'} minutes)`);
             }
-          )
-          .subscribe();
 
-        const to = setTimeout(() => {
-          timedOut = true;
-          try { channel.unsubscribe(); } catch (e) {}
-          setEligibilityMessage('Timed out waiting for eligibility result. Try again or check logs.');
-        }, requestTimeoutMs);
+            channel.unsubscribe();
+          }
+        )
+        .subscribe();
 
-      } catch (err) {
-        setEligibilityMessage('Error contacting backend for eligibility check.');
-      }
-    };
-    performCheck();
+      const to = setTimeout(() => {
+        timedOut = true;
+        try { channel.unsubscribe(); } catch (e) {}
+        setEligibilityMessage('Timed out waiting for eligibility result. Try again or check logs.');
+      }, requestTimeoutMs);
+
+    } catch (err) {
+      setEligibilityMessage(`Error contacting backend: ${err.message || err}`);
+    }
   };
 
   return (
@@ -232,8 +237,8 @@ function App() {
                       style={fileType === type ? { backgroundColor: '#1c2b61', color: 'white', border: '1px solid #1c2b61' } : { backgroundColor: 'white', color: '#1c2b61', border: '1px solid #1c2b61' }}
                       onClick={() => {
                         setFileType(type);
-                        setFileMessage("");
-                        setFileMessageType("");
+                        setFileMessage('');
+                        setFileMessageType('');
                       }}
                       disabled={!file}
                     >

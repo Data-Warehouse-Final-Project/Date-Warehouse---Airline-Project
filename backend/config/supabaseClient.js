@@ -1,20 +1,17 @@
-// Load environment variables (if a .env file exists)
-try {
-	require('dotenv').config();
-} catch (e) {
-	// ignore if dotenv is not installed/available in this environment
-}
+import dotenv from 'dotenv';
+import { createClient } from '@supabase/supabase-js';
 
-// Import the necessary libraries
-const { createClient } = require('@supabase/supabase-js');
+// Load environment variables from .env file
+dotenv.config();
 
 // Setup the Supabase client with your project URL and API key
-const supabaseUrl = process.env.SUPABASE_URL; // Your Supabase URL
-const supabaseKey = process.env.SUPABASE_KEY; // Your Supabase service role key (or anon key)
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
 
 let supabase;
+
 if (!supabaseUrl || !supabaseKey) {
-	console.warn('SUPABASE_URL or SUPABASE_KEY not set. Supabase client not configured.');
+	console.warn('⚠️  SUPABASE_URL or SUPABASE_KEY not set. Supabase client not configured.');
 	// Provide a minimal stub that will throw helpful errors if used before configuration
 	supabase = new Proxy({}, {
 		get() {
@@ -27,4 +24,5 @@ if (!supabaseUrl || !supabaseKey) {
 	supabase = createClient(supabaseUrl, supabaseKey);
 }
 
-module.exports = { supabase }; // Export the client for use in other files
+export { supabase };
+export default supabase;

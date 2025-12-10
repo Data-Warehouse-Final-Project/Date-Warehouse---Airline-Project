@@ -31,3 +31,9 @@ npm start
 Integration notes:
 - If you plan to use Supabase from the frontend, prefer the anon/public key and use the Supabase client in `frontend/src`.
 - For server-side operations that require elevated privileges, use a service role key on a secure server (never expose this in the frontend).
+
+
+EAIRDR IN USE (paste in terminal)
+- netstat -ano | findstr :3001
+-taskkill /PID <PID> /F
+-npm start

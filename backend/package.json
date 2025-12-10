@@ -2,15 +2,22 @@
   "name": "backend",
   "private": true,
   "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.87.1",
     "cors": "^2.8.5",
-    "csv-parse": "^5.4.0",
+    "csv-parse": "^5.6.0",
     "dotenv": "^17.2.3",
+    "express": "^4.22.1",
     "express-fileupload": "^1.5.2",
-    "kafkajs": "^2.2.4"
+    "fs": "^0.0.1-security",
+    "kafka-node": "^5.0.0",
+    "kafkajs": "^2.2.4",
+    "multer": "^2.0.2",
+    "path": "^0.12.7",
+    "supabase": "^2.65.8"
   }
 }
